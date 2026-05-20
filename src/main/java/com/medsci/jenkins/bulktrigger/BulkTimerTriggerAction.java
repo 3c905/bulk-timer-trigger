@@ -9,6 +9,7 @@ import hudson.triggers.TriggerDescriptor;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.View;
 import org.kohsuke.stapler.verb.POST;
 
 import java.net.URLEncoder;
@@ -42,12 +43,26 @@ public class BulkTimerTriggerAction implements RootAction {
 
     @Override
     public String getIconFileName() {
-        return "symbol-clock-outline";
+        // 使用 Jenkins 核心内置的 clock 图标，避免依赖 ionicons-api
+        return "clock";
     }
 
     @Override
     public String getDisplayName() {
         return "Bulk Timer Trigger";
+    }
+
+    /**
+     * Stapler 入口：GET 请求到 /bulk-timer-trigger 时直接渲染 index.jelly
+     */
+    public void doIndex(StaplerRequest req, StaplerResponse rsp) throws Exception {
+        Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+        View view = req.getView(this, "index");
+        if (view == null) {
+            rsp.sendError(jakarta.servlet.http.HttpServletResponse.SC_NOT_FOUND, "index view not found");
+            return;
+        }
+        view.forward(req, rsp);
     }
 
     @Override
@@ -133,7 +148,12 @@ public class BulkTimerTriggerAction implements RootAction {
         req.setAttribute("originalTime", timeStr.trim());
         req.setAttribute("jobCount", selectedJobs.length);
 
-        req.getView(this, "preview").forward(req, rsp);
+        View view = req.getView(this, "preview");
+        if (view == null) {
+            rsp.sendError(jakarta.servlet.http.HttpServletResponse.SC_NOT_FOUND, "preview view not found");
+            return;
+        }
+        view.forward(req, rsp);
     }
 
     /**

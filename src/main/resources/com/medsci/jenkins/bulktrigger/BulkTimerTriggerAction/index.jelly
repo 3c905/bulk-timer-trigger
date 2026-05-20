@@ -146,12 +146,12 @@
         <j:set var="error" value="${request.getParameter('error')}"/>
         <j:if test="${error != null}">
           <j:choose>
-            <j:when test="${error == 'invalid_time'}">
+            <j:when test="${error.equals('invalid_time')}">
               <div class="alert alert-danger">
                 ❌ 时间格式错误。请使用 <code>YYYY-MM-DD HH:mm</code>，例如 <code>${it.defaultScheduleTime}</code>
               </div>
             </j:when>
-            <j:when test="${error == 'no_jobs_selected'}">
+            <j:when test="${error.equals('no_jobs_selected')}">
               <div class="alert alert-danger">
                 ❌ 请至少选择一个 Job。
               </div>

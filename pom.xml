@@ -21,8 +21,8 @@
     <properties>
         <!-- Jenkins 2.479+ 已完成 Jakarta EE 迁移，parent POM 5.x 要求 JDK 17+ -->
         <jenkins.version>2.555.2</jenkins.version>
-        <!-- 显式指定 Java 21，与运行环境保持一致 -->
-        <maven.compiler.release>21</maven.compiler.release>
+        <!-- Jenkins 2.555.2 最低支持 Java 17；设为 17 可同时兼容 Java 17/21 运行环境 -->
+        <maven.compiler.release>17</maven.compiler.release>
         <!-- 跳过 Spotless 代码格式化检查，避免构建失败（如需启用可删除此行） -->
         <spotless.check.skip>true</spotless.check.skip>
         <!-- 覆盖 parent POM 中旧版 hpi-plugin，使用支持 Java 21 的最新版本 -->

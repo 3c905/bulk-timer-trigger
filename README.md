@@ -1,6 +1,6 @@
 # Bulk Timer Trigger
 
-Jenkins 插件 —— 批量设置 Job 的定时构建 Trigger。
+D:\vscode\bulk-timer-trigger\README.md
 
 ## 功能
 
