@@ -88,7 +88,7 @@
 
         <j:if test="${request.getAttribute('adjusted')}">
           <div class="alert alert-warning">
-            ⚠️ 您输入的时间已过去，已自动调整为明天同一时间执行。
+            ⚠️ 您输入的时间已过去，已自动调整。本月日期顺延至第二天；非本月日期调整为本月本日 21:00（若已过则明天 21:00）。
           </div>
         </j:if>
 

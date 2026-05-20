@@ -179,11 +179,21 @@ public class BulkTimerTriggerAction implements RootAction {
             return;
         }
 
-        // 如果时间在当前时间之前，自动调整为明天同一时间
+        // 时间调整策略
         boolean adjusted = false;
         LocalDateTime now = LocalDateTime.now();
         if (scheduleTime.isBefore(now)) {
-            scheduleTime = scheduleTime.plusDays(1);
+            if (scheduleTime.getYear() == now.getYear()
+                    && scheduleTime.getMonthValue() == now.getMonthValue()) {
+                // 本月，时间已过 → 本月第二天
+                scheduleTime = scheduleTime.plusDays(1);
+            } else {
+                // 非本月，且是过去 → 本月本日 21:00（若已过则明天 21:00）
+                scheduleTime = now.withHour(21).withMinute(0).withSecond(0).withNano(0);
+                if (scheduleTime.isBefore(now)) {
+                    scheduleTime = scheduleTime.plusDays(1);
+                }
+            }
             adjusted = true;
         }
 
