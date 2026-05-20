@@ -95,7 +95,7 @@
         <div class="info-card">
           <p><b>计划执行时间：</b> ${request.getAttribute('scheduleTime')}</p>
           <p><b>生成的 Cron：</b> <code>${request.getAttribute('cron')}</code></p>
-          <p class="sub-hint">💡 设置后，这些 Job 将每天在该时间点自动触发构建。</p>
+          <p class="sub-hint">💡 设置后，这些 Job 将每年在该日期自动触发构建。</p>
         </div>
 
         <div class="result-count">即将设置的 Job（共 ${request.getAttribute('jobCount')} 个）</div>

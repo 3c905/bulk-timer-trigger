@@ -38,18 +38,18 @@
           flex-wrap: wrap;
         }
         .bulk-trigger-wrap .search-row input[type="text"] {
-          font-size: 13px;
-          padding: 5px 10px;
+          font-size: 16px;
+          padding: 8px 14px;
           border: 1px solid #d0d7de;
-          border-radius: 6px;
-          min-width: 260px;
-          height: 32px;
+          border-radius: 8px;
+          min-width: 320px;
+          height: 48px;
           box-sizing: border-box;
         }
         .bulk-trigger-wrap .search-row .jenkins-button {
-          height: 32px;
-          padding: 0 16px;
-          font-size: 13px;
+          height: 48px;
+          padding: 0 28px;
+          font-size: 16px;
           white-space: nowrap;
         }
         .bulk-trigger-wrap .hint {
@@ -95,9 +95,9 @@
           flex-wrap: wrap;
         }
         .bulk-trigger-wrap .action-bar .jenkins-button {
-          height: 34px;
-          padding: 0 18px;
-          font-size: 13px;
+          height: 52px;
+          padding: 0 32px;
+          font-size: 16px;
         }
         .bulk-trigger-wrap .cron-ref {
           color: #666;
@@ -172,7 +172,7 @@
         <form method="get" action="." style="margin:0;padding:0;">
           <div class="search-row">
             <input type="text" name="pattern" value="${request.getParameter('pattern')}" placeholder="正则表达式，例如: edc-.*" size="36"/>
-            <input type="submit" value="🔍 搜索" class="jenkins-button jenkins-button--primary"/>
+            <input type="submit" value="🔍 搜索" class="jenkins-button jenkins-button--primary" title="点击搜索匹配的 Job"/>
             <span class="hint">输入正则表达式，匹配到的 Job 会显示在下方的列表中</span>
           </div>
         </form>
@@ -207,13 +207,14 @@
                     <input type="text" name="scheduleTime" value="${it.defaultScheduleTime}" placeholder="YYYY-MM-DD HH:mm" size="20"/>
                   </j:otherwise>
                 </j:choose>
-                <span class="hint">格式：YYYY-MM-DD HH:mm，默认当天 21:00。若时间已过则自动顺延至明天。</span>
+                <span class="hint">格式：YYYY-MM-DD HH:mm，默认当年该日 21:00。设置后每年此日期自动触发构建。</span>
               </div>
 
               <table class="jenkins-table sortable">
                 <thead>
                   <tr>
                     <th style="width:40px;"><input type="checkbox" id="selectAll" onclick="
+                      event.stopPropagation();
                       var boxes = document.getElementsByName('selectedJobs');
                       for (var i=0; i&lt;boxes.length; i++) boxes[i].checked = this.checked;
                     "/></th>
@@ -246,7 +247,7 @@
                   <input type="checkbox" name="reload" checked="checked"/>
                   应用后自动 Reload Jenkins
                 </label>
-                <input type="submit" value="📋 预览执行计划" class="jenkins-button jenkins-button--primary"/>
+                <input type="submit" value="📋 预览执行计划" class="jenkins-button jenkins-button--primary" title="点击预览并确认执行计划"/>
               </div>
             </form>
           </j:if>

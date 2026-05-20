@@ -21,6 +21,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 /**
@@ -37,6 +38,8 @@ import java.util.regex.Pattern;
  */
 @Extension
 public class BulkTimerTriggerAction implements RootAction {
+
+    private static final Logger LOGGER = Logger.getLogger(BulkTimerTriggerAction.class.getName());
 
     private static final DateTimeFormatter INPUT_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final DateTimeFormatter DISPLAY_FMT = DateTimeFormatter.ofPattern("yyyy年MM月dd日 HH时mm分");
@@ -184,8 +187,12 @@ public class BulkTimerTriggerAction implements RootAction {
             adjusted = true;
         }
 
-        // 生成 Cron 表达式（每天该时间执行）
-        String cron = String.format("0 %d %d * * *", scheduleTime.getMinute(), scheduleTime.getHour());
+        // 生成 Cron 表达式（每年该日期执行）
+        String cron = String.format("%d %d %d %d *",
+            scheduleTime.getMinute(),
+            scheduleTime.getHour(),
+            scheduleTime.getDayOfMonth(),
+            scheduleTime.getMonthValue());
 
         req.setAttribute("scheduleTime", scheduleTime.format(DISPLAY_FMT));
         req.setAttribute("cron", cron);
@@ -224,10 +231,9 @@ public class BulkTimerTriggerAction implements RootAction {
                 continue;
             }
             try {
-                // 移除旧的 TimerTrigger（通过 TriggerDescriptor，兼容 Jenkins 2.479+）
+                // 移除旧的 TimerTrigger
                 List<TriggerDescriptor> toRemove = new ArrayList<>();
-                Map<TriggerDescriptor, Trigger<?>> triggers = job.getTriggers();
-                for (Map.Entry<TriggerDescriptor, Trigger<?>> entry : triggers.entrySet()) {
+                for (Map.Entry<TriggerDescriptor, Trigger<?>> entry : job.getTriggers().entrySet()) {
                     if (entry.getValue() instanceof TimerTrigger) {
                         toRemove.add(entry.getKey());
                     }
@@ -236,11 +242,13 @@ public class BulkTimerTriggerAction implements RootAction {
                     job.removeTrigger(td);
                 }
 
-                // 添加新的 TimerTrigger
+                // 添加新的 TimerTrigger（5 字段 cron：分 时 日 月 星期）
                 job.addTrigger(new TimerTrigger(cron));
                 job.save();
                 success++;
             } catch (Exception e) {
+                LOGGER.warning("Failed to set trigger for " + jobName + ": " + e);
+                e.printStackTrace();
                 fail++;
             }
         }
