@@ -112,6 +112,60 @@
           border-radius: 4px;
           font-size: 12px;
         }
+        .bulk-trigger-wrap .job-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+          gap: 10px;
+          margin-bottom: 16px;
+        }
+        .bulk-trigger-wrap .job-card {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 12px;
+          border: 1px solid #e1e4e8;
+          border-radius: 8px;
+          background: #fafbfc;
+          transition: background 0.15s ease;
+        }
+        .bulk-trigger-wrap .job-card:hover {
+          background: #f0f3f6;
+        }
+        .bulk-trigger-wrap .job-card input[type="checkbox"] {
+          flex-shrink: 0;
+          width: 16px;
+          height: 16px;
+          margin: 0;
+        }
+        .bulk-trigger-wrap .job-card .job-info {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .bulk-trigger-wrap .job-card .job-name {
+          font-size: 13px;
+          font-weight: 500;
+          color: #1a1a1a;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .bulk-trigger-wrap .job-card .job-cron {
+          font-size: 12px;
+          color: #666;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .bulk-trigger-wrap .job-card .job-cron.set {
+          color: #2e7d32;
+          font-weight: 500;
+        }
+        .bulk-trigger-wrap .job-card .job-cron.unset {
+          color: #999;
+        }
         .bulk-trigger-wrap .alert {
           font-size: 13px;
           padding: 10px 14px;
@@ -179,78 +233,80 @@
 
         <!-- 结果展示 -->
         <j:set var="pattern" value="${request.getParameter('pattern')}"/>
+        <j:set var="matched" value="${it.searchJobs(pattern)}"/>
 
-        <j:if test="${pattern != null &amp;&amp; !pattern.isEmpty()}">
-          <j:set var="matched" value="${it.searchJobs(pattern)}"/>
+        <j:if test="${matched.isEmpty()}">
+          <div class="alert alert-warning">
+            ⚠️ 未找到匹配 '<j:if test="${pattern != null}">${pattern}</j:if><j:if test="${pattern == null}">(全部)</j:if>' 的 Job
+          </div>
+        </j:if>
 
-          <j:if test="${matched.isEmpty()}">
-            <div class="alert alert-warning">
-              ⚠️ 未找到匹配 '${pattern}' 的 Job
+        <j:if test="${!matched.isEmpty()}">
+          <j:choose>
+            <j:when test="${pattern != null &amp;&amp; !pattern.isEmpty()}">
+              <div class="result-count">找到 ${matched.size()} 个匹配的 Job</div>
+            </j:when>
+            <j:otherwise>
+              <div class="result-count">共 ${matched.size()} 个 Job（显示全部）</div>
+            </j:otherwise>
+          </j:choose>
+
+          <form method="post" action="preview">
+            <input type="hidden" name="${h.getCrumbRequestField()}" value="${h.getCrumb(request)}"/>
+            <input type="hidden" name="pattern" value="${pattern}"/>
+
+            <div class="section-label">⏰ 执行时间</div>
+            <div class="time-row">
+              <j:set var="timeParam" value="${request.getParameter('time')}"/>
+              <j:choose>
+                <j:when test="${timeParam != null}">
+                  <input type="text" name="scheduleTime" value="${timeParam}" placeholder="YYYY-MM-DD HH:mm" size="20"/>
+                </j:when>
+                <j:otherwise>
+                  <input type="text" name="scheduleTime" value="${it.defaultScheduleTime}" placeholder="YYYY-MM-DD HH:mm" size="20"/>
+                </j:otherwise>
+              </j:choose>
+              <span class="hint">格式：YYYY-MM-DD HH:mm，默认当年该日 21:00。设置后每年此日期自动触发构建。</span>
             </div>
-          </j:if>
 
-          <j:if test="${!matched.isEmpty()}">
-            <div class="result-count">找到 ${matched.size()} 个匹配的 Job</div>
+            <div style="margin-bottom:8px;">
+              <label style="font-size:13px; color:#444;">
+                <input type="checkbox" id="selectAll" onclick="
+                  event.stopPropagation();
+                  var boxes = document.getElementsByName('selectedJobs');
+                  for (var i=0; i&lt;boxes.length; i++) boxes[i].checked = this.checked;
+                "/>
+                全选 / 取消全选
+              </label>
+            </div>
 
-            <form method="post" action="preview">
-              <input type="hidden" name="${h.getCrumbRequestField()}" value="${h.getCrumb(request)}"/>
-              <input type="hidden" name="pattern" value="${pattern}"/>
+            <div class="job-grid">
+              <j:forEach var="job" items="${matched}">
+                <div class="job-card" title="${job.name}">
+                  <input type="checkbox" name="selectedJobs" value="${job.name}"/>
+                  <div class="job-info">
+                    <span class="job-name">${job.name}</span>
+                    <j:choose>
+                      <j:when test="${job.hasTrigger()}">
+                        <span class="job-cron set">${job.currentCron}</span>
+                      </j:when>
+                      <j:otherwise>
+                        <span class="job-cron unset">未设置</span>
+                      </j:otherwise>
+                    </j:choose>
+                  </div>
+                </div>
+              </j:forEach>
+            </div>
 
-              <div class="section-label">⏰ 执行时间</div>
-              <div class="time-row">
-                <j:set var="timeParam" value="${request.getParameter('time')}"/>
-                <j:choose>
-                  <j:when test="${timeParam != null}">
-                    <input type="text" name="scheduleTime" value="${timeParam}" placeholder="YYYY-MM-DD HH:mm" size="20"/>
-                  </j:when>
-                  <j:otherwise>
-                    <input type="text" name="scheduleTime" value="${it.defaultScheduleTime}" placeholder="YYYY-MM-DD HH:mm" size="20"/>
-                  </j:otherwise>
-                </j:choose>
-                <span class="hint">格式：YYYY-MM-DD HH:mm，默认当年该日 21:00。设置后每年此日期自动触发构建。</span>
-              </div>
-
-              <table class="jenkins-table sortable">
-                <thead>
-                  <tr>
-                    <th style="width:40px;"><input type="checkbox" id="selectAll" onclick="
-                      event.stopPropagation();
-                      var boxes = document.getElementsByName('selectedJobs');
-                      for (var i=0; i&lt;boxes.length; i++) boxes[i].checked = this.checked;
-                    "/></th>
-                    <th>Job 名称</th>
-                    <th style="width:200px;">当前定时配置</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <j:forEach var="job" items="${matched}">
-                    <tr>
-                      <td><input type="checkbox" name="selectedJobs" value="${job.name}"/></td>
-                      <td>${job.name}</td>
-                      <td>
-                        <j:choose>
-                          <j:when test="${job.hasTrigger()}">
-                            <span style="color: #2e7d32; font-weight:500;">${job.currentCron}</span>
-                          </j:when>
-                          <j:otherwise>
-                            <span style="color: #999;">未设置</span>
-                          </j:otherwise>
-                        </j:choose>
-                      </td>
-                    </tr>
-                  </j:forEach>
-                </tbody>
-              </table>
-
-              <div class="action-bar">
-                <label style="font-size:13px; color:#444;">
-                  <input type="checkbox" name="reload" checked="checked"/>
-                  应用后自动 Reload Jenkins
-                </label>
-                <input type="submit" value="📋 预览执行计划" class="jenkins-button jenkins-button--primary" title="点击预览并确认执行计划"/>
-              </div>
-            </form>
-          </j:if>
+            <div class="action-bar">
+              <label style="font-size:13px; color:#444;">
+                <input type="checkbox" name="reload" checked="checked"/>
+                应用后自动 Reload Jenkins
+              </label>
+              <input type="submit" value="📋 预览执行计划" class="jenkins-button jenkins-button--primary" title="点击预览并确认执行计划"/>
+            </div>
+          </form>
         </j:if>
 
         <div class="cron-ref">

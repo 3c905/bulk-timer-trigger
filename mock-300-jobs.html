@@ -1,0 +1,2254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bulk Timer Trigger - 300 Jobs Mock</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #f6f8fa;
+    margin: 0;
+    padding: 20px;
+  }
+  .bulk-trigger-wrap {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .bulk-trigger-wrap h1 {
+    font-size: 26px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .bulk-trigger-wrap h1 .big-icon { font-size: 32px; line-height: 1; }
+  .bulk-trigger-wrap .subtitle { color: #666; font-size: 13px; margin-bottom: 20px; }
+  .bulk-trigger-wrap .section-label {
+    font-size: 14px; font-weight: 600; color: #333; margin-bottom: 6px;
+  }
+  .bulk-trigger-wrap .search-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .bulk-trigger-wrap .search-row input[type="text"] {
+    font-size: 16px; padding: 8px 14px; border: 1px solid #d0d7de;
+    border-radius: 8px; min-width: 320px; height: 48px; box-sizing: border-box;
+  }
+  .bulk-trigger-wrap .search-row button {
+    height: 48px; padding: 0 28px; font-size: 16px; white-space: nowrap;
+    background: #2ea44f; color: #fff; border: none; border-radius: 8px; cursor: pointer;
+  }
+  .bulk-trigger-wrap .hint { font-size: 12px; color: #888; margin-left: 4px; }
+  .bulk-trigger-wrap .time-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .bulk-trigger-wrap .time-row input[type="text"] {
+    font-size: 13px; padding: 5px 10px; border: 1px solid #d0d7de;
+    border-radius: 6px; width: 180px; height: 32px; box-sizing: border-box;
+  }
+  .bulk-trigger-wrap .result-count {
+    font-size: 15px; font-weight: 600; margin-bottom: 8px; color: #1a1a1a;
+  }
+  .bulk-trigger-wrap .job-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .bulk-trigger-wrap .job-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid #e1e4e8;
+    border-radius: 8px;
+    background: #fafbfc;
+    transition: background 0.15s ease;
+  }
+  .bulk-trigger-wrap .job-card:hover { background: #f0f3f6; }
+  .bulk-trigger-wrap .job-card input[type="checkbox"] {
+    flex-shrink: 0; width: 16px; height: 16px; margin: 0;
+  }
+  .bulk-trigger-wrap .job-card .job-info {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .bulk-trigger-wrap .job-card .job-name {
+    font-size: 13px; font-weight: 500; color: #1a1a1a;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .bulk-trigger-wrap .job-card .job-cron {
+    font-size: 12px; color: #666;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .bulk-trigger-wrap .job-card .job-cron.set { color: #2e7d32; font-weight: 500; }
+  .bulk-trigger-wrap .job-card .job-cron.unset { color: #999; }
+  .bulk-trigger-wrap .action-bar {
+    display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap;
+  }
+  .bulk-trigger-wrap .action-bar button {
+    height: 52px; padding: 0 32px; font-size: 16px;
+    background: #2ea44f; color: #fff; border: none; border-radius: 8px; cursor: pointer;
+  }
+  .bulk-trigger-wrap .cron-ref {
+    color: #666; font-size: 12px; margin-top: 16px;
+    padding-top: 12px; border-top: 1px solid #e5e5e5;
+  }
+  .bulk-trigger-wrap .cron-ref code {
+    background: #f5f5f5; padding: 2px 6px; border-radius: 4px; font-size: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="bulk-trigger-wrap">
+  <h1><span class="big-icon">🔧</span> Bulk Timer Trigger</h1>
+  <div class="subtitle">批量设置 Jenkins Job 的定时构建 Trigger</div>
+
+  <div class="section-label">🔍 模糊匹配 Job</div>
+  <div class="search-row">
+    <input type="text" placeholder="正则表达式，例如: edc-.*" size="36"/>
+    <button>🔍 搜索</button>
+    <span class="hint">输入正则表达式，匹配到的 Job 会显示在下方的列表中</span>
+  </div>
+
+  <div class="result-count">共 300 个 Job（显示全部）</div>
+
+  <div class="section-label">⏰ 执行时间</div>
+  <div class="time-row">
+    <input type="text" value="2026-05-20 21:00" placeholder="YYYY-MM-DD HH:mm" size="20"/>
+    <span class="hint">格式：YYYY-MM-DD HH:mm，默认当年该日 21:00。设置后每年此日期自动触发构建。</span>
+  </div>
+
+  <div style="margin-bottom:8px;">
+    <label style="font-size:13px; color:#444;">
+      <input type="checkbox" id="selectAll" onclick="
+        var boxes = document.getElementsByName('selectedJobs');
+        for (var i=0; i&lt;boxes.length; i++) boxes[i].checked = this.checked;
+      "/> 全选 / 取消全选
+    </label>
+  </div>
+
+  <div class="job-grid">
+    <div class="job-card" title="edc-service-001-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-001-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-001-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-002-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-002-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-002-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-003-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-003-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-003-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-004-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-004-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-004-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-005-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-005-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-005-build</span>
+        <span class="job-cron set">0 21 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-006-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-006-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-006-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-007-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-007-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-007-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-008-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-008-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-008-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-009-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-009-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-009-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-010-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-010-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-010-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-011-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-011-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-011-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-012-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-012-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-012-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-013-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-013-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-013-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-014-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-014-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-014-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-015-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-015-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-015-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-016-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-016-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-016-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-017-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-017-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-017-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-018-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-018-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-018-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-019-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-019-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-019-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-020-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-020-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-020-build</span>
+        <span class="job-cron set">0 21 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-021-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-021-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-021-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-022-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-022-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-022-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-023-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-023-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-023-build</span>
+        <span class="job-cron set">0 21 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-024-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-024-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-024-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-025-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-025-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-025-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-026-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-026-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-026-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-027-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-027-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-027-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-028-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-028-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-028-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-029-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-029-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-029-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-030-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-030-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-030-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-031-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-031-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-031-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-032-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-032-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-032-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-033-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-033-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-033-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-034-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-034-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-034-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-035-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-035-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-035-build</span>
+        <span class="job-cron set">0 21 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-036-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-036-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-036-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-037-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-037-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-037-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-038-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-038-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-038-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-039-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-039-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-039-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-040-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-040-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-040-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-041-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-041-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-041-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-042-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-042-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-042-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-043-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-043-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-043-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-044-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-044-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-044-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-045-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-045-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-045-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-046-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-046-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-046-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-047-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-047-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-047-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-048-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-048-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-048-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-049-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-049-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-049-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-050-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-050-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-050-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-051-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-051-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-051-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-052-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-052-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-052-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-053-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-053-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-053-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-054-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-054-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-054-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-055-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-055-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-055-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-056-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-056-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-056-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-057-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-057-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-057-build</span>
+        <span class="job-cron set">0 21 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-058-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-058-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-058-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-059-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-059-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-059-build</span>
+        <span class="job-cron set">0 21 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-060-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-060-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-060-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-061-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-061-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-061-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-062-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-062-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-062-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-063-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-063-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-063-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-064-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-064-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-064-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-065-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-065-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-065-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-066-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-066-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-066-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-067-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-067-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-067-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-068-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-068-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-068-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-069-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-069-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-069-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-070-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-070-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-070-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-071-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-071-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-071-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-072-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-072-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-072-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-073-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-073-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-073-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-074-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-074-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-074-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-075-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-075-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-075-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-076-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-076-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-076-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-077-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-077-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-077-build</span>
+        <span class="job-cron set">0 21 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-078-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-078-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-078-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-079-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-079-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-079-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-080-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-080-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-080-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-081-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-081-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-081-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-082-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-082-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-082-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-083-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-083-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-083-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-084-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-084-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-084-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-085-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-085-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-085-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-086-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-086-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-086-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-087-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-087-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-087-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-088-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-088-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-088-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-089-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-089-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-089-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-090-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-090-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-090-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-091-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-091-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-091-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-092-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-092-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-092-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-093-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-093-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-093-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-094-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-094-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-094-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-095-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-095-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-095-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-096-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-096-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-096-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-097-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-097-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-097-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-098-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-098-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-098-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-099-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-099-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-099-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-100-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-100-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-100-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-101-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-101-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-101-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-102-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-102-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-102-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-103-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-103-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-103-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-104-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-104-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-104-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-105-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-105-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-105-build</span>
+        <span class="job-cron set">0 21 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-106-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-106-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-106-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-107-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-107-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-107-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-108-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-108-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-108-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-109-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-109-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-109-build</span>
+        <span class="job-cron set">0 21 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-110-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-110-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-110-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-111-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-111-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-111-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-112-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-112-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-112-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-113-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-113-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-113-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-114-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-114-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-114-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-115-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-115-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-115-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-116-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-116-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-116-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-117-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-117-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-117-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-118-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-118-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-118-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-119-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-119-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-119-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-120-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-120-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-120-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-121-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-121-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-121-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-122-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-122-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-122-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-123-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-123-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-123-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-124-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-124-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-124-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-125-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-125-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-125-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-126-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-126-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-126-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-127-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-127-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-127-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-128-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-128-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-128-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-129-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-129-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-129-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-130-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-130-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-130-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-131-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-131-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-131-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-132-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-132-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-132-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-133-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-133-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-133-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-134-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-134-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-134-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-135-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-135-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-135-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-136-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-136-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-136-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-137-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-137-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-137-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-138-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-138-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-138-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-139-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-139-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-139-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-140-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-140-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-140-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-141-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-141-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-141-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-142-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-142-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-142-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-143-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-143-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-143-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-144-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-144-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-144-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-145-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-145-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-145-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-146-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-146-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-146-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-147-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-147-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-147-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-148-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-148-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-148-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-149-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-149-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-149-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-150-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-150-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-150-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-151-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-151-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-151-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-152-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-152-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-152-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-153-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-153-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-153-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-154-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-154-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-154-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-155-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-155-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-155-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-156-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-156-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-156-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-157-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-157-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-157-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-158-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-158-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-158-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-159-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-159-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-159-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-160-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-160-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-160-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-161-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-161-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-161-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-162-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-162-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-162-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-163-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-163-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-163-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-164-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-164-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-164-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-165-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-165-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-165-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-166-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-166-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-166-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-167-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-167-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-167-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-168-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-168-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-168-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-169-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-169-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-169-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-170-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-170-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-170-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-171-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-171-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-171-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-172-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-172-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-172-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-173-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-173-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-173-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-174-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-174-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-174-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-175-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-175-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-175-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-176-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-176-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-176-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-177-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-177-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-177-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-178-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-178-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-178-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-179-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-179-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-179-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-180-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-180-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-180-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-181-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-181-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-181-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-182-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-182-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-182-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-183-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-183-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-183-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-184-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-184-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-184-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-185-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-185-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-185-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-186-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-186-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-186-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-187-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-187-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-187-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-188-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-188-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-188-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-189-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-189-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-189-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-190-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-190-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-190-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-191-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-191-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-191-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-192-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-192-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-192-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-193-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-193-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-193-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-194-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-194-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-194-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-195-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-195-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-195-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-196-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-196-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-196-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-197-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-197-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-197-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-198-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-198-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-198-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-199-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-199-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-199-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-200-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-200-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-200-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-201-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-201-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-201-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-202-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-202-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-202-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-203-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-203-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-203-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-204-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-204-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-204-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-205-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-205-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-205-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-206-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-206-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-206-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-207-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-207-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-207-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-208-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-208-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-208-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-209-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-209-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-209-build</span>
+        <span class="job-cron set">0 21 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-210-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-210-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-210-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-211-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-211-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-211-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-212-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-212-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-212-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-213-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-213-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-213-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-214-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-214-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-214-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-215-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-215-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-215-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-216-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-216-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-216-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-217-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-217-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-217-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-218-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-218-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-218-build</span>
+        <span class="job-cron set">0 21 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-219-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-219-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-219-build</span>
+        <span class="job-cron set">0 21 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-220-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-220-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-220-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-221-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-221-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-221-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-222-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-222-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-222-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-223-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-223-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-223-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-224-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-224-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-224-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-225-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-225-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-225-build</span>
+        <span class="job-cron set">0 21 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-226-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-226-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-226-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-227-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-227-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-227-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-228-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-228-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-228-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-229-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-229-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-229-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-230-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-230-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-230-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-231-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-231-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-231-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-232-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-232-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-232-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-233-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-233-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-233-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-234-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-234-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-234-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-235-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-235-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-235-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-236-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-236-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-236-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-237-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-237-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-237-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-238-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-238-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-238-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-239-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-239-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-239-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-240-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-240-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-240-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-241-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-241-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-241-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-242-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-242-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-242-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-243-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-243-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-243-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-244-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-244-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-244-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-245-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-245-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-245-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-246-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-246-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-246-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-247-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-247-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-247-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-248-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-248-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-248-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-249-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-249-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-249-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-250-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-250-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-250-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-251-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-251-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-251-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-252-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-252-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-252-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-253-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-253-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-253-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-254-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-254-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-254-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-255-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-255-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-255-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-256-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-256-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-256-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-257-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-257-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-257-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-258-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-258-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-258-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-259-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-259-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-259-build</span>
+        <span class="job-cron set">0 21 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-260-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-260-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-260-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-261-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-261-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-261-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-262-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-262-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-262-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-263-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-263-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-263-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-264-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-264-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-264-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-265-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-265-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-265-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-266-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-266-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-266-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-267-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-267-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-267-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-268-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-268-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-268-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-269-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-269-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-269-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-270-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-270-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-270-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-271-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-271-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-271-build</span>
+        <span class="job-cron set">0 21 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-272-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-272-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-272-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-273-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-273-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-273-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-274-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-274-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-274-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-275-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-275-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-275-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-276-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-276-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-276-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-277-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-277-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-277-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-278-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-278-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-278-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-279-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-279-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-279-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-280-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-280-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-280-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-281-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-281-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-281-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-282-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-282-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-282-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-283-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-283-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-283-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-284-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-284-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-284-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-285-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-285-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-285-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-286-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-286-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-286-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-287-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-287-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-287-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-288-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-288-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-288-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-289-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-289-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-289-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-290-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-290-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-290-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-291-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-291-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-291-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-292-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-292-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-292-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-293-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-293-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-293-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-294-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-294-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-294-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-295-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-295-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-295-build</span>
+        <span class="job-cron set">H/15 * * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-296-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-296-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-296-build</span>
+        <span class="job-cron set">0 8 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-297-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-297-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-297-build</span>
+        <span class="job-cron unset">未设置</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-298-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-298-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-298-build</span>
+        <span class="job-cron set">H 2 * * 1-5</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-299-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-299-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-299-build</span>
+        <span class="job-cron set">0 21 * * *</span>
+      </div>
+    </div>
+    <div class="job-card" title="edc-service-300-build">
+      <input type="checkbox" name="selectedJobs" value="edc-service-300-build"/>
+      <div class="job-info">
+        <span class="job-name">edc-service-300-build</span>
+        <span class="job-cron set">30 18 * * *</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <label style="font-size:13px; color:#444;">
+      <input type="checkbox" checked="checked"/> 应用后自动 Reload Jenkins
+    </label>
+    <button>📋 预览执行计划</button>
+  </div>
+
+  <div class="cron-ref">
+    <b>Cron 格式参考:</b> 分 时 日 月 星期<br/>
+    <code>0 21 * * *</code> = 每天 21:00 &nbsp;|&nbsp;
+    <code>H 2 * * 1-5</code> = 工作日凌晨 2:00 &nbsp;|&nbsp;
+    <code>H/15 * * * *</code> = 每 15 分钟
+  </div>
+</div>
+</body>
+</html>

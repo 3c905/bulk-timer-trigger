@@ -131,13 +131,13 @@ public class BulkTimerTriggerAction implements RootAction {
      */
     public List<JobMatch> searchJobs(String pattern) {
         List<JobMatch> result = new ArrayList<>();
-        if (pattern == null || pattern.isEmpty()) {
-            return result;
+        Pattern regex = null;
+        if (pattern != null && !pattern.isEmpty()) {
+            regex = Pattern.compile(pattern);
         }
-        Pattern regex = Pattern.compile(pattern);
         Jenkins jenkins = Jenkins.get();
         for (AbstractProject<?, ?> job : jenkins.getAllItems(AbstractProject.class)) {
-            if (regex.matcher(job.getFullName()).find()) {
+            if (regex == null || regex.matcher(job.getFullName()).find()) {
                 String currentCron = "";
                 for (Trigger<?> t : job.getTriggers().values()) {
                     if (t instanceof TimerTrigger) {
