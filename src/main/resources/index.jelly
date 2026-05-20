@@ -1,0 +1,4 @@
+<?jelly escape-by-default='true'?>
+<div>
+    批量设置 Jenkins Job 的定时构建 Trigger，支持模糊匹配、勾选具体 Job、预览执行计划。
+</div>
