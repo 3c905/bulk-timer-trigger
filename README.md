@@ -42,7 +42,7 @@ mvn clean package -Dmaven.test.skip=true
 
 ## 截图
 
-（待补充）
+![alt text](image.png)
 
 ## License
 

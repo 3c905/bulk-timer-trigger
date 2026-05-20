@@ -7,9 +7,9 @@ import hudson.triggers.TimerTrigger;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
 import jenkins.model.Jenkins;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
-import org.kohsuke.stapler.View;
+import org.kohsuke.stapler.StaplerRequest2;
+import org.kohsuke.stapler.StaplerResponse2;
+
 import org.kohsuke.stapler.verb.POST;
 
 import java.net.URLEncoder;
@@ -52,22 +52,68 @@ public class BulkTimerTriggerAction implements RootAction {
         return "Bulk Timer Trigger";
     }
 
-    /**
-     * Stapler 入口：GET 请求到 /bulk-timer-trigger 时直接渲染 index.jelly
-     */
-    public void doIndex(StaplerRequest req, StaplerResponse rsp) throws Exception {
-        Jenkins.get().checkPermission(Jenkins.ADMINISTER);
-        View view = req.getView(this, "index");
-        if (view == null) {
-            rsp.sendError(jakarta.servlet.http.HttpServletResponse.SC_NOT_FOUND, "index view not found");
-            return;
-        }
-        view.forward(req, rsp);
-    }
-
     @Override
     public String getUrlName() {
         return "bulk-timer-trigger";
+    }
+
+    /**
+     * Stapler 入口：GET 请求到 /bulk-timer-trigger 时渲染 index.jelly
+     */
+    public void doIndex(StaplerRequest2 req, StaplerResponse2 rsp) throws Exception {
+        Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+        req.getView(this, "index").forward(req, rsp);
+    }
+
+    /**
+     * 健康检测端点：GET /bulk-timer-trigger/health
+     * 供外部监控或 Jenkins 自身检查插件状态，无需登录即可访问基础状态
+     */
+    public void doHealth(StaplerRequest2 req, StaplerResponse2 rsp) throws Exception {
+        rsp.setContentType("application/json;charset=UTF-8");
+        rsp.setStatus(200);
+
+        Jenkins jenkins = Jenkins.get();
+        boolean permissionOk = jenkins.hasPermission(Jenkins.ADMINISTER);
+        boolean jobAccessible = false;
+        boolean triggerAvailable = false;
+        String message = "healthy";
+
+        try {
+            jenkins.getAllItems(AbstractProject.class);
+            jobAccessible = true;
+        } catch (Throwable t) {
+            message = "unable to access jobs: " + t.getMessage();
+        }
+
+        try {
+            new TimerTrigger("0 0 * * *");
+            triggerAvailable = true;
+        } catch (Throwable t) {
+            message = "timer trigger unavailable: " + t.getMessage();
+        }
+
+        String version = "";
+        try {
+            hudson.util.VersionNumber vn = jenkins.getVersion();
+            version = (vn != null) ? vn.toString() : "unknown";
+        } catch (Throwable t) {
+            version = "unknown";
+        }
+
+        // 简单的 JSON 转义，防止特殊字符破坏输出
+        version = version.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ");
+        message = message.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ");
+
+        String json = "{" +
+            "\"status\":\"ok\"," +
+            "\"jenkins_version\":\"" + version + "\"," +
+            "\"permission_ok\":" + permissionOk + "," +
+            "\"job_accessible\":" + jobAccessible + "," +
+            "\"trigger_available\":" + triggerAvailable + "," +
+            "\"message\":\"" + message + "\"" +
+            "}";
+        rsp.getWriter().print(json);
     }
 
     /**
@@ -106,7 +152,7 @@ public class BulkTimerTriggerAction implements RootAction {
      * 预览执行计划：验证时间、生成 Cron、展示确认页
      */
     @POST
-    public void doPreview(StaplerRequest req, StaplerResponse rsp) throws Exception {
+    public void doPreview(StaplerRequest2 req, StaplerResponse2 rsp) throws Exception {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
 
         String timeStr = req.getParameter("scheduleTime");
@@ -148,19 +194,14 @@ public class BulkTimerTriggerAction implements RootAction {
         req.setAttribute("originalTime", timeStr.trim());
         req.setAttribute("jobCount", selectedJobs.length);
 
-        View view = req.getView(this, "preview");
-        if (view == null) {
-            rsp.sendError(jakarta.servlet.http.HttpServletResponse.SC_NOT_FOUND, "preview view not found");
-            return;
-        }
-        view.forward(req, rsp);
+        req.getView(this, "preview").forward(req, rsp);
     }
 
     /**
      * 表单提交处理（真正执行设置）
      */
     @POST
-    public void doApply(StaplerRequest req, StaplerResponse rsp) throws Exception {
+    public void doApply(StaplerRequest2 req, StaplerResponse2 rsp) throws Exception {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
 
         String cron = req.getParameter("cron");

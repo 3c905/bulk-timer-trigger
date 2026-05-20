@@ -254,8 +254,8 @@
 
         <div class="cron-ref">
           <b>Cron 格式参考:</b> 分 时 日 月 星期<br/>
-          <code>0 21 * * *</code> = 每天 21:00 &nbsp;|&nbsp;
-          <code>H 2 * * 1-5</code> = 工作日凌晨 2:00 &nbsp;|&nbsp;
+          <code>0 21 * * *</code> = 每天 21:00 &#160;|&#160;
+          <code>H 2 * * 1-5</code> = 工作日凌晨 2:00 &#160;|&#160;
           <code>H/15 * * * *</code> = 每 15 分钟
         </div>
       </div>

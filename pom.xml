@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>5.4</version>
+        <version>5.27</version>
         <relativePath/>
     </parent>
 
@@ -19,15 +19,41 @@
     <name>Bulk Timer Trigger</name>
 
     <properties>
-        <!-- Jenkins 2.479+ 已完成 Jakarta EE 迁移，parent POM 5.x 要求 JDK 17+ -->
         <jenkins.version>2.555.2</jenkins.version>
-        <!-- Jenkins 2.555.2 最低支持 Java 17；设为 17 可同时兼容 Java 17/21 运行环境 -->
-        <maven.compiler.release>17</maven.compiler.release>
-        <!-- 跳过 Spotless 代码格式化检查，避免构建失败（如需启用可删除此行） -->
+        <maven.compiler.release>21</maven.compiler.release>
         <spotless.check.skip>true</spotless.check.skip>
-        <!-- 覆盖 parent POM 中旧版 hpi-plugin，使用支持 Java 21 的最新版本 -->
         <hpi-plugin.version>3.1814.v77d15159f9b_d</hpi-plugin.version>
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jenkins-ci.tools</groupId>
+                <artifactId>maven-hpi-plugin</artifactId>
+                <configuration>
+                    <webResources>
+                        <resource>
+                            <directory>${project.build.outputDirectory}</directory>
+                            <targetPath>WEB-INF/classes</targetPath>
+                            <includes>
+                                <include>**/*</include>
+                            </includes>
+                        </resource>
+                    </webResources>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-testCompile</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
     <repositories>
         <repository>
