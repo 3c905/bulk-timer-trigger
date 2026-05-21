@@ -64,10 +64,26 @@
           margin-top: 16px;
           flex-wrap: wrap;
         }
-        .bulk-trigger-wrap .action-bar .jenkins-button {
-          height: 36px;
-          padding: 0 20px;
-          font-size: 14px;
+        .bulk-trigger-wrap .green-btn {
+          height: 40px;
+          padding: 0 24px;
+          font-size: 15px;
+          white-space: nowrap;
+          background: #2ea44f;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          text-decoration: none;
+        }
+        .bulk-trigger-wrap .green-btn:hover {
+          background: #25853f;
+          color: #fff;
+          text-decoration: none;
         }
         .bulk-trigger-wrap .alert-warning {
           background: #fff8e1;
@@ -128,11 +144,10 @@
               <input type="hidden" name="selectedJobs" value="${jobName}"/>
             </j:forEach>
             <input type="hidden" name="reload" value="on"/>
-            <input type="submit" value="✅ 确认执行"
-                   class="jenkins-button jenkins-button--primary"
-                   onclick="return confirm('确认对选中的 Job 设置定时构建？');"/>
+            <button type="submit" class="green-btn"
+                   onclick="return confirm('确认对选中的 Job 设置定时构建？');">✅ 确认执行</button>
           </form>
-          <a href="." class="jenkins-button">↩ 返回修改</a>
+          <a href="." class="green-btn">↩ 返回修改</a>
         </div>
       </div>
     </l:main-panel>
