@@ -328,7 +328,14 @@
                 应用后自动 Reload Jenkins
               </label>
               <button type="submit" class="green-btn" title="点击预览并确认执行计划">📋 预览执行计划</button>
+              <button type="button" class="green-btn" onclick="return confirmClear();" title="清空当前匹配 Job 的定时构建设置">🗑️ 清空所有定时</button>
             </div>
+          </form>
+
+          <form method="post" action="clearAll" id="clearForm" style="display:none;">
+            <input type="hidden" name="${h.getCrumbRequestField()}" value="${h.getCrumb(request)}"/>
+            <input type="hidden" name="pattern" value="${pattern}"/>
+            <input type="hidden" name="reload" value="on"/>
           </form>
         </j:if>
 
@@ -360,6 +367,12 @@
         }
         updateChineseTime();
       })();
+      function confirmClear() {
+        if (confirm('确认清空当前匹配 Job 的定时构建设置？此操作不可恢复。')) {
+          document.getElementById('clearForm').submit();
+        }
+        return false;
+      }
       </script>
     </l:main-panel>
   </l:layout>

@@ -143,7 +143,10 @@
             <j:forEach var="jobName" items="${jobs}">
               <input type="hidden" name="selectedJobs" value="${jobName}"/>
             </j:forEach>
-            <input type="hidden" name="reload" value="on"/>
+            <j:set var="reloadParam" value="${request.getAttribute('reloadParam')}"/>
+            <j:if test="${reloadParam != null &amp;&amp; reloadParam.equals('on')}">
+              <input type="hidden" name="reload" value="on"/>
+            </j:if>
             <button type="submit" class="green-btn"
                    onclick="return confirm('确认对选中的 Job 设置定时构建？');">✅ 确认执行</button>
           </form>

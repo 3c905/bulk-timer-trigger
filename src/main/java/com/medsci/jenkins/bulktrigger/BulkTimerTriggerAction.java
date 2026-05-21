@@ -210,6 +210,7 @@ public class BulkTimerTriggerAction implements RootAction {
         req.setAttribute("selectedJobs", selectedJobs);
         req.setAttribute("originalTime", timeStr.trim());
         req.setAttribute("jobCount", selectedJobs.length);
+        req.setAttribute("reloadParam", req.getParameter("reload"));
 
         req.getView(this, "preview").forward(req, rsp);
     }
@@ -263,12 +264,86 @@ public class BulkTimerTriggerAction implements RootAction {
             }
         }
 
-        // Reload Jenkins
+        rsp.sendRedirect(".?result=done&success=" + success + "&fail=" + fail);
+
+        // Reload Jenkins 在后台异步执行，避免阻塞当前 HTTP 响应导致 403
         if (success > 0 && doReload) {
-            jenkins.reload();
+            final Jenkins j = jenkins;
+            new Thread("bulk-timer-trigger-reload") {
+                @Override
+                public void run() {
+                    try {
+                        Thread.sleep(2000);
+                        j.reload();
+                    } catch (Exception e) {
+                        LOGGER.warning("Background reload failed: " + e.getMessage());
+                    }
+                }
+            }.start();
+        }
+    }
+
+    /**
+     * 清空所有匹配 Job 的定时构建设置
+     */
+    @POST
+    public void doClearAll(StaplerRequest2 req, StaplerResponse2 rsp) throws Exception {
+        Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+
+        String pattern = req.getParameter("pattern");
+        boolean doReload = "on".equals(req.getParameter("reload"));
+
+        Jenkins jenkins = Jenkins.get();
+        int success = 0;
+        int fail = 0;
+
+        Pattern regex = null;
+        if (pattern != null && !pattern.isEmpty()) {
+            regex = Pattern.compile(pattern);
+        }
+
+        for (AbstractProject<?, ?> job : jenkins.getAllItems(AbstractProject.class)) {
+            if (regex != null && !regex.matcher(job.getFullName()).find()) {
+                continue;
+            }
+            try {
+                List<TriggerDescriptor> toRemove = new ArrayList<>();
+                for (Map.Entry<TriggerDescriptor, Trigger<?>> entry : job.getTriggers().entrySet()) {
+                    if (entry.getValue() instanceof TimerTrigger) {
+                        toRemove.add(entry.getKey());
+                    }
+                }
+                if (!toRemove.isEmpty()) {
+                    for (TriggerDescriptor td : toRemove) {
+                        job.removeTrigger(td);
+                    }
+                    job.save();
+                    success++;
+                }
+            } catch (Exception e) {
+                LOGGER.warning("Failed to clear trigger for " + job.getFullName() + ": " + e);
+                e.printStackTrace();
+                fail++;
+            }
         }
 
         rsp.sendRedirect(".?result=done&success=" + success + "&fail=" + fail);
+
+        // Reload Jenkins 在后台异步执行，避免阻塞当前 HTTP 响应导致 403
+        if (success > 0 && doReload) {
+            final Jenkins j = jenkins;
+            new Thread("bulk-timer-trigger-reload") {
+                @Override
+                public void run() {
+                    try {
+                        Thread.sleep(2000);
+                        j.reload();
+                    } catch (Exception e) {
+                        LOGGER.warning("Background reload failed: " + e.getMessage());
+                    }
+                }
+            }.start();
+        }
     }
 
     private String buildRedirectUrl(String error, String timeStr, String pattern) {
