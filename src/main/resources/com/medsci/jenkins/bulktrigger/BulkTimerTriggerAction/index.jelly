@@ -132,7 +132,7 @@
         }
         .bulk-trigger-wrap .job-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
           gap: 6px;
           margin-bottom: 8px;
         }
@@ -166,9 +166,7 @@
           font-size: 15px;
           font-weight: 700;
           color: #1a1a1a;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          word-break: break-all;
         }
         .bulk-trigger-wrap .job-card .job-cron {
           font-size: 14px;
