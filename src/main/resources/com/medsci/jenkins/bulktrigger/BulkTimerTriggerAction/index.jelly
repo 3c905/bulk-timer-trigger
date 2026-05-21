@@ -65,13 +65,19 @@
           flex-wrap: wrap;
         }
         .bulk-trigger-wrap .time-row input[type="text"] {
-          font-size: 13px;
-          padding: 5px 10px;
+          font-size: 16px;
+          padding: 6px 12px;
           border: 1px solid #d0d7de;
           border-radius: 6px;
-          width: 180px;
-          height: 32px;
+          width: 200px;
+          height: 40px;
           box-sizing: border-box;
+        }
+        .bulk-trigger-wrap .chinese-time {
+          font-size: 18px;
+          font-weight: 700;
+          color: #d32f2f;
+          margin-left: 8px;
         }
         .bulk-trigger-wrap .result-count {
           font-size: 15px;
@@ -114,15 +120,15 @@
         }
         .bulk-trigger-wrap .job-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-          gap: 10px;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 12px;
           margin-bottom: 16px;
         }
         .bulk-trigger-wrap .job-card {
           display: flex;
           align-items: center;
-          gap: 8px;
-          padding: 8px 12px;
+          gap: 10px;
+          padding: 12px 14px;
           border: 1px solid #e1e4e8;
           border-radius: 8px;
           background: #fafbfc;
@@ -145,26 +151,32 @@
           gap: 2px;
         }
         .bulk-trigger-wrap .job-card .job-name {
-          font-size: 13px;
-          font-weight: 500;
+          font-size: 15px;
+          font-weight: 700;
           color: #1a1a1a;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
         .bulk-trigger-wrap .job-card .job-cron {
-          font-size: 12px;
-          color: #666;
+          font-size: 14px;
+          font-weight: 600;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          padding: 2px 6px;
+          border-radius: 4px;
+          display: inline-block;
+          margin-top: 2px;
         }
         .bulk-trigger-wrap .job-card .job-cron.set {
-          color: #2e7d32;
-          font-weight: 500;
+          color: #1b5e20;
+          background: #e8f5e9;
+          font-weight: 700;
         }
         .bulk-trigger-wrap .job-card .job-cron.unset {
           color: #999;
+          background: #f5f5f5;
         }
         .bulk-trigger-wrap .alert {
           font-size: 13px;
@@ -260,12 +272,13 @@
               <j:set var="timeParam" value="${request.getParameter('time')}"/>
               <j:choose>
                 <j:when test="${timeParam != null}">
-                  <input type="text" name="scheduleTime" value="${timeParam}" placeholder="YYYY-MM-DD HH:mm" size="20"/>
+                  <input type="text" id="triggerTime" name="scheduleTime" value="${timeParam}" placeholder="YYYY-MM-DD HH:mm" size="20"/>
                 </j:when>
                 <j:otherwise>
-                  <input type="text" name="scheduleTime" value="${it.defaultScheduleTime}" placeholder="YYYY-MM-DD HH:mm" size="20"/>
+                  <input type="text" id="triggerTime" name="scheduleTime" value="${it.defaultScheduleTime}" placeholder="YYYY-MM-DD HH:mm" size="20"/>
                 </j:otherwise>
               </j:choose>
+              <span class="chinese-time" id="chineseTimeDisplay"></span>
               <span class="hint">格式：YYYY-MM-DD HH:mm，默认当年该日 21:00。设置后每年此日期自动触发构建。</span>
             </div>
 
@@ -316,6 +329,28 @@
           <code>H/15 * * * *</code> = 每 15 分钟
         </div>
       </div>
+      <script>
+      (function(){
+        function updateChineseTime() {
+          var input = document.getElementById('triggerTime');
+          var display = document.getElementById('chineseTimeDisplay');
+          if (!input || !display) return;
+          var val = input.value.trim();
+          var m = val.match(/^(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})$/);
+          if (m) {
+            display.textContent = '（' + parseInt(m[1],10) + '年' + parseInt(m[2],10) + '月' + parseInt(m[3],10) + '日' + parseInt(m[4],10) + '点）';
+          } else {
+            display.textContent = '';
+          }
+        }
+        var input = document.getElementById('triggerTime');
+        if (input) {
+          input.addEventListener('input', updateChineseTime);
+          input.addEventListener('change', updateChineseTime);
+        }
+        updateChineseTime();
+      })();
+      </script>
     </l:main-panel>
   </l:layout>
 </j:jelly>
